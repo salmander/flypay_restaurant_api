@@ -1,0 +1,20 @@
+{
+    "name": "sahmed/flypay_api",
+    "description": "FlyPay API",
+    "authors": [
+        {
+            "name": "Salman Ahmed",
+            "email": "emailme@ssahmed.co.uk"
+        }
+    ],
+    "require": {
+        "illuminate/database": "^5.1"
+    },
+    "autoload": {
+        "classmap": [
+            "app/models",
+            "app/classes"
+        ]
+    }
+
+}
