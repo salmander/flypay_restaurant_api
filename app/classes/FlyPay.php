@@ -3,7 +3,7 @@
  * Created by PhpStorm.
  * User: salman
  * Date: 08/10/15
- * Time: 23:52
+ * Time: 21:52
  */
 
 namespace App;
@@ -20,11 +20,14 @@ class FlyPay
     {
         $this->data = $data;
 
-        $this->required_fields  = $this->getRequiredFields();
+        $this->required_fields  = $this->getRequiredFieldsForPayment();
         $this->response = new Response();
     }
 
-    public function getRequiredFields()
+    /**
+     * @return array: Required fields for postPayment request
+     */
+    public function getRequiredFieldsForPayment()
     {
         return  [
             'payment_amount_ex_vat',        // payment total excluding VAT
@@ -40,8 +43,12 @@ class FlyPay
         ];
     }
 
+    /**
+     * @return bool: postPayment request validation
+     */
     private function validatePaymentRequest()
     {
+        // Check if all the required fields are present in the data request
         foreach ($this->required_fields as $f) {
             if (!isset($this->data[$f])) {
                 $this->response->addMessage('Missing field: ' . $f);
@@ -57,6 +64,7 @@ class FlyPay
         // Step 1: Check if the request contains required fields
         if (!$this->validatePaymentRequest()) {
             $this->response->addMessage('Invalid Payment Request.');
+
             return $this->output();
         }
 
@@ -69,7 +77,7 @@ class FlyPay
         $payment->payment_vendor_id = $this->data['payment_vendor_id'];
         $payment->employee_id = $this->data['employee_id'];
         $payment->order_id = $this->data['order_id'];
-        $payment->payment_taken_at = \Carbon\Carbon::createFromFormat('Y-m-d H:i', $this->data['payment_taken_at']);
+        $payment->payment_taken_at = $this->data['payment_taken_at'];
         $payment->terminal_id = $this->data['terminal_id'];
         $payment->created_at = \Carbon\Carbon::now();
 
@@ -82,20 +90,34 @@ class FlyPay
         }
     }
 
+
+    public function getPaymentsReport()
+    {
+        // Get the payments in the last 24 hours.
+        $payments = \Payment::with('payment_type')->sinceHoursAgo(24);
+
+        // Check if the payments are for a particular location
+        if (isset($this->data['branch_id'])) {
+            $payments->where('branch_id', $this->data['branch_id']);
+        }
+
+        // Construct
+        foreach ($payments->get() as $payment) {
+            $this->response->addMessage($payment->toArray());
+        }
+
+        $this->response->setSuccess(1);
+
+        return $this->output();
+    }
+
+    /**
+     * Show JSON output
+     */
     private function output()
     {
         header('Content-Type: application/json');
 
         echo $this->response->toJson();
-    }
-
-    private function authenticatePaymentRequest()
-    {
-
-    }
-
-    public function getPaymentsReport()
-    {
-        echo "get payments report function";
     }
 }
