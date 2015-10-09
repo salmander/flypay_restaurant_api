@@ -11,10 +11,10 @@
         "illuminate/database": "^5.1"
     },
     "autoload": {
-        "classmap": [
-            "app/models",
-            "app/classes"
-        ]
+        "psr-4": {
+            "": "app/models/",
+            "App\\": "app/classes/"
+        }
     }
 
 }

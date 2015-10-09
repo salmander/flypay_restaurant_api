@@ -19,13 +19,21 @@ echo "<pre>";
 echo "method: ", print_r($method, true), "\r\n";
 echo "data: ", print_r($data, true), "\r\n";
 
-// Validate URL
+// Validate URL and call respective function
 
-if (preg_match('/post_payment/', $method)) {
-    processPayment($data);
+if (preg_match('/^\/post_payment/', $method)) {
 
-} else if (preg_match('/get_payments_report/', $method)) {
+    $flypay = new \App\FlyPay($data);
+    $flypay->postPayment();
+
+    //processPayment($data);
+
+} else if (preg_match('/^\/get_payments_report/', $method)) {
     getPaymentsReport($data);
+
+} else {
+    return output(['success' => 0, 'message' => 'Invalid method called']);
+
 }
 
 // Do authentication
@@ -40,18 +48,19 @@ if (preg_match('/post_payment/', $method)) {
  */
 function processPayment($data = array())
 {
-    echo "Process Payment function\n";
     $return = [];
 
     $required_fields = [
-        'payment_amount_ex_vat',
-        'vat_amount',
-        'branch_id',
-        'payment_vendor_id',
-        'employee_id',
-        'order_id',
-        'payment_taken_at',
-        'terminal_id',
+        'payment_amount_ex_vat',        // payment total excluding VAT
+        'vat_amount',                   // total VAT
+        'gratuity_amount',              // tip
+        'table_id',                     // table number
+        'branch_id',                    // the ID of the restaurant location where the table is at
+        'payment_vendor_id',            // a payment reference for the third party (who created the payment)
+        'payment_taken_at',             // timestamp provided in the request
+        'employee_id',                  // who served the customer
+        'order_id',                     // unique order reference
+        'terminal_id',                  // payment terminal used
     ];
 
     // Validate payment request
@@ -69,17 +78,22 @@ function processPayment($data = array())
     $payment = new Payment();
     $payment->payment_amount_ex_vat = $data['payment_amount_ex_vat'];
     $payment->vat_amount = $data['vat_amount'];
+    $payment->gratuity_amount = (isset($data['gratuity_amount'])) ? $data['gratuity_amount'] : 0;
     $payment->branch_id = $data['branch_id'];
     $payment->payment_vendor_id = $data['payment_vendor_id'];
     $payment->employee_id = $data['employee_id'];
     $payment->order_id = $data['order_id'];
-    $payment->payment_taken_at = $data['payment_taken_at'];
+    $payment->payment_taken_at = \Carbon\Carbon::createFromFormat('Y-m-d H:i', $data['payment_taken_at']);
     $payment->terminal_id = $data['terminal_id'];
     $payment->created_at = \Carbon\Carbon::now();
 
-    return output($payment->save());
+    // Save it into the database
+    if ($payment->save()) {
+        $return['success'] = 1;
+        $return['payment_id'] = $payment->id;
 
-
+        output($return);
+    }
 
 }
 
