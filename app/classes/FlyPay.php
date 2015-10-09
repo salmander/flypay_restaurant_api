@@ -106,7 +106,11 @@ class FlyPay
             $this->response->addMessage($payment->toArray());
         }
 
-        $this->response->setSuccess(1);
+        if ($payments->count() > 0) {
+            $this->response->setSuccess(1);
+        } else {
+            $this->response->addMessage('No data');
+        }
 
         return $this->output();
     }

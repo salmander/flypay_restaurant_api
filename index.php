@@ -1,18 +1,12 @@
 <?php
 
-ini_set('display_errors',1);
-ini_set('display_startup_errors',1);
-error_reporting(-1);
-
 require_once __DIR__ . "/vendor/autoload.php";
-
 require_once __DIR__ . "/app/config/config.php";
 
 $data = isset($_REQUEST) ? $_REQUEST : []; // GET or POST data payload
 $method = $_SERVER['REQUEST_URI']; // "post_payment" or "get_payments_report"
 
 // Validate URL and call respective function
-
 if (preg_match('/^\/post_payment/', $method)) { // For post_payment request
     $flypay = new \App\FlyPay($data);
     $flypay->postPayment();
